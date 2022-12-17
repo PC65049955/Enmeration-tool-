@@ -26,6 +26,11 @@ namespace ProcessEnumeration
             }
         }
 
+        /// <summary>
+        /// Gathers information about a process and returns it as a dictionary.
+        /// </summary>
+        /// <param name="process">The process to gather information about.</param>
+        /// <returns>A dictionary containing the gathered information.</returns>
         static Dictionary<string, object> GetProcessInfo(Process process) 
         {
             // Create a dictionary to store the gathered information
@@ -35,7 +40,7 @@ namespace ProcessEnumeration
             {
                 // Add the process name to the dictionary
                 processInfo.Add("Process name", process.ProcessName);
-
+                
                 // Add the process ID to the dictionary
                 processInfo.Add("Process ID", process.Id);
 
@@ -76,22 +81,21 @@ namespace ProcessEnumeration
                 // Check the integrity level of the process
                 WindowsIdentity identity = WindowsIdentity.GetCurrent();
                 WindowsPrincipal principal = new WindowsPrincipal(identity);
-                // Add the integrity level to the dictionary 
+                // Add the integrity level to the dictionary
                 processInfo.Add("Integrity level", principal.GetIntegrityLevel());
-                
-                            // Check the privilege level of the current process
-            // Add the privilege level to the dictionary
-            processInfo.Add("Privilege level", principal.IsInRole(WindowsBuiltInRole.Administrator) ? "Administrator" : "User");
-        }
-        catch (Exception e) 
-        {
-            // An error occurred while gathering information about the process
-            processInfo.Add("Error", "An error occurred while gathering information about the process: " + e.Message);
-        }
 
-        // Return the gathered information
-        return processInfo;
+                // Check the privilege level of the current process
+                // Add the privilege level to the dictionary
+                processInfo.Add("Privilege level", principal.IsInRole(WindowsBuiltInRole.Administrator) ? "Administrator" : "User");
+            }
+            catch (Exception e) 
+            {
+                // An error occurred while gathering information about the process
+                processInfo.Add("Error", "An error occurred while gathering information about the process: " + e.Message);
+            }
+            // Return the gathered information
+            return processInfo;
+        }
     }
 }
-
 
