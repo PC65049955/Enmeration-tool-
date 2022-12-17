@@ -1,0 +1,58 @@
+using System;
+using System.Diagnostics;
+using System.Security.Principal;
+
+namespace ProcessEnumeration
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Get a list of all running processes on the system
+            Process[] processes = Process.GetProcesses();
+
+            // Iterate through the list of processes and gather information about each one
+            foreach (Process process in processes)
+            {
+                try
+                {
+                    Console.WriteLine("Process name: " + process.ProcessName);
+                    Console.WriteLine("Process ID: " + process.Id);
+                    Console.WriteLine("Process start time: " + process.StartTime);
+                    Console.WriteLine("Process privileged processor time: " + process.PrivilegedProcessorTime);
+                    Console.WriteLine("Process total processor time: " + process.TotalProcessorTime);
+                    Console.WriteLine("Process virtual memory size: " + process.VirtualMemorySize64);
+                    Console.WriteLine("Process private memory size: " + process.PrivateMemorySize64);
+                    Console.WriteLine("Process thread count: " + process.Threads.Count);
+
+                    // Check if the AMSI module is loaded in the process
+                    bool isAmsiLoaded = false;
+                    foreach (ProcessModule module in process.Modules)
+                    {
+                        if (module.ModuleName == "amsi.dll")
+                        {
+                            isAmsiLoaded = true;
+                            break;
+                        }
+                    }
+                    Console.WriteLine("AMSI loaded: " + isAmsiLoaded);
+
+                    // Check if the process is running as 64-bit or 32-bit
+                    Console.WriteLine("Process architecture: " + (Environment.Is64BitProcess ? "64-bit" : "32-bit"));
+
+                    // Check the integrity level of the process
+                    WindowsIdentity identity = WindowsIdentity.GetCurrent();
+                    WindowsPrincipal principal = new WindowsPrincipal(identity);
+                    Console.WriteLine("Integrity level: " + principal.GetIntegrityLevel());
+
+                    // Check the privilege level of the current process
+                    Console.WriteLine("Privilege level: " + principal.IsInRole(WindowsBuiltInRole.Administrator) ? "Administrator" : "User");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("An error occurred while gathering information about the process: " + e.Message);
+                }
+            }
+        }
+    }
+}
