@@ -1,101 +1,95 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Principal;
-using System.Collections.Generic;
+using System.Text;
 
-namespace ProcessEnumeration 
+namespace ProcessEnumeration
 {
-    class Program 
+    class Program
     {
-        static void Main(string[] args) 
+        static void Main(string[] args)
         {
+            List<Dictionary<string, object>> processInfoList = new List<Dictionary<string, object>>();
+
             // Get a list of all running processes on the system
             Process[] processes = Process.GetProcesses();
 
             // Iterate through the list of processes and gather information about each one
-            foreach (Process process in processes) 
+            foreach (Process process in processes)
             {
-                // Gather information about the process and store it in a dictionary
-                Dictionary<string, object> processInfo = GetProcessInfo(process);
-
-                // Print the gathered information to the console
-                foreach (KeyValuePair<string, object> info in processInfo) 
+                try
                 {
-                    Console.WriteLine(info.Key + ": " + info.Value);
+                    // Gather information about the process and store it in a dictionary
+                    Dictionary<string, object> processInfo = GatherProcessInfo(process);
+
+                    // Add the process information to the list
+                    processInfoList.Add(processInfo);
                 }
+                catch (Exception e)
+                {
+                    // An error occurred while gathering information about the process
+                    Console.WriteLine("Error: Failed to gather information about process {0}. Reason: {1}",
+                        process.ProcessName, e.Message);
+                }
+            }
+
+            // Print the gathered information to the console
+            foreach (Dictionary<string, object> processInfo in processInfoList)
+            {
+                PrintProcessInfo(processInfo);
             }
         }
 
-        /// <summary>
-        /// Gathers information about a process and returns it as a dictionary.
-        /// </summary>
-        /// <param name="process">The process to gather information about.</param>
-        /// <returns>A dictionary containing the gathered information.</returns>
-        static Dictionary<string, object> GetProcessInfo(Process process) 
+        static Dictionary<string, object> GatherProcessInfo(Process process)
         {
-            // Create a dictionary to store the gathered information
             Dictionary<string, object> processInfo = new Dictionary<string, object>();
 
-            try 
+            // Add the process properties to the dictionary
+            processInfo.Add("Process name", process.ProcessName);
+            processInfo.Add("Process ID", process.Id);
+            processInfo.Add("Process start time", process.StartTime);
+            processInfo.Add("Process privileged processor time", process.PrivilegedProcessorTime);
+            processInfo.Add("Process total processor time", process.TotalProcessorTime);
+            processInfo.Add("Process virtual memory size", process.VirtualMemorySize64);
+            processInfo.Add("Process private memory size", process.PrivateMemorySize64);
+            processInfo.Add("Process thread count", process.Threads.Count);
+
+            // Check if the AMSI module is loaded in the process
+            bool isAmsiLoaded = false;
+            foreach (ProcessModule module in process.Modules)
             {
-                // Add the process name to the dictionary
-                processInfo.Add("Process name", process.ProcessName);
-                
-                // Add the process ID to the dictionary
-                processInfo.Add("Process ID", process.Id);
-
-                // Add the process start time to the dictionary
-                processInfo.Add("Process start time", process.StartTime);
-
-                // Add the process privileged processor time to the dictionary
-                processInfo.Add("Process privileged processor time", process.PrivilegedProcessorTime);
-
-                // Add the process total processor time to the dictionary
-                processInfo.Add("Process total processor time", process.TotalProcessorTime);
-
-                // Add the process virtual memory size to the dictionary
-                processInfo.Add("Process virtual memory size", process.VirtualMemorySize64);
-
-                // Add the process private memory size to the dictionary
-                processInfo.Add("Process private memory size", process.PrivateMemorySize64);
-
-                // Add the process thread count to the dictionary
-                processInfo.Add("Process thread count", process.Threads.Count);
-
-                // Check if the AMSI module is loaded in the process
-                bool isAmsiLoaded = false;
-                foreach (ProcessModule module in process.Modules) 
+                if (module.ModuleName == "amsi.dll")
                 {
-                    if (module.ModuleName == "amsi.dll")
-                    {
-                        isAmsiLoaded = true;
-                        break;
-                    }
+                    isAmsiLoaded = true;
+                    break;
                 }
-                // Add the AMSI loaded status to the dictionary
-                processInfo.Add("AMSI loaded", isAmsiLoaded);
-
-                // Add the process architecture to the dictionary
-                processInfo.Add("Process architecture", Environment.Is64BitProcess ? "64-bit" : "32-bit");
-
-                // Check the integrity level of the process
-                WindowsIdentity identity = WindowsIdentity.GetCurrent();
-                WindowsPrincipal principal = new WindowsPrincipal(identity);
-                // Add the integrity level to the dictionary
-                processInfo.Add("Integrity level", principal.GetIntegrityLevel());
-
-                // Check the privilege level of the current process
-                // Add the privilege level to the dictionary
-                processInfo.Add("Privilege level", principal.IsInRole(WindowsBuiltInRole.Administrator) ? "Administrator" : "User");
             }
-            catch (Exception e) 
-            {
-                // An error occurred while gathering information about the process
-                processInfo.Add("Error", "An error occurred while gathering information about the process: " + e.Message);
-            }
-            // Return the gathered information
+            processInfo.Add("AMSI loaded", isAmsiLoaded);
+
+            processInfo.Add("Process architecture", Environment.Is64BitProcess ? "64-bit" : "32-bit");
+
+            // Check the integrity level of the process
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            processInfo.Add("Integrity level", principal.GetIntegrityLevel());
+
+            // Check the privilege level of the current process
+            processInfo.Add("Privilege level", principal.IsInRole(WindowsBuiltInRole.Administrator) ? "Administrator" : "User");
+
             return processInfo;
+        }
+
+        static void PrintProcessInfo(Dictionary<string, object> processInfo)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (KeyValuePair<string, object> info in processInfo)
+            {
+                sb.AppendFormat("{0}: {1}\t", info.Key, info.Value);
+            }
+
+            Console.WriteLine(sb.ToString());
         }
     }
 }
-
